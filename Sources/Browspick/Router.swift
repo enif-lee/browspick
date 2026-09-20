@@ -65,7 +65,10 @@ final class Router {
     // MARK: - Picker
 
     func pickerEntries() -> [PickerEntry] {
-        Self.pickerEntries(config: ConfigStore.shared.config)
+        let entries = Self.pickerEntries(config: ConfigStore.shared.config)
+        // Keep the native-host snapshot fresh whenever the picker is used.
+        TargetsSnapshot.write()
+        return entries
     }
 
     /// Picker entries for a config — static so suggestion cards can offer the

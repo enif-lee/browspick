@@ -61,19 +61,13 @@ enum NativeMessagingHost {
         }
     }
 
-    /// Same list the in-app picker shows, so the extension popover mirrors it.
+    /// The app persists the picker list to targets.json — this spawned process
+    /// runs under the *browser's* TCC context and may not be able to read other
+    /// browsers' profile stores, so the snapshot is the source of truth.
     private static func targets() -> [[String: String]] {
-        MainActor.assumeIsolated {
-            Router.pickerEntries(config: ConfigStore.shared.config).map { entry in
-                var d = ["key": entry.target.key, "title": entry.title]
-                if let icon = entry.icon,
-                   let tiff = icon.tiffRepresentation,
-                   let rep = NSBitmapImageRep(data: tiff),
-                   let png = rep.representation(using: .png, properties: [:]) {
-                    d["icon"] = "data:image/png;base64," + png.base64EncodedString()
-                }
-                return d
-            }
+        if let snapshot = TargetsSnapshot.read() { return snapshot }
+        return MainActor.assumeIsolated {
+            Router.pickerEntries(config: ConfigStore.shared.config).map(TargetsSnapshot.entryDict)
         }
     }
 

@@ -16,6 +16,7 @@ final class AppState: ObservableObject {
         records = HistoryStore.shared.records
         ConfigStore.shared.onChange = { [weak self] in
             self?.config = ConfigStore.shared.config
+            TargetsSnapshot.write()
         }
         HistoryStore.shared.onRecord = { [weak self] in
             self?.records = HistoryStore.shared.records
