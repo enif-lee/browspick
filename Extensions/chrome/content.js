@@ -83,14 +83,26 @@ function showPopover(a) {
   popHost.onmouseover = () => clearTimeout(hideTimer);
   popHost.onmouseout = scheduleHide;
 
-  // Targets (browsers + profiles) — fetched once per page load.
+  // Targets (browsers + profiles) — success is cached; failures retry on the
+  // next hover so a transient native-messaging error self-heals.
   const list = shadow.getElementById("bp-list");
-  if (targetsCache === undefined) {
+  if (targetsCache === undefined || targetsCache === null) {
     list.innerHTML = `<div class="row dim">Browspick…</div>`;
-    chrome.runtime.sendMessage({ type: "browspick:getTargets" }, (r) => {
-      targetsCache = (chrome.runtime.lastError || !Array.isArray(r)) ? null : r;
+    let settled = false;
+    const finish = (r) => {
+      if (settled) return;
+      settled = true;
+      targetsCache = Array.isArray(r) ? r : null;
       renderTargets(list, a);
-    });
+    };
+    setTimeout(() => finish(null), 2000);
+    try {
+      chrome.runtime.sendMessage({ type: "browspick:getTargets" }, (r) => {
+        finish(chrome.runtime.lastError ? null : r);
+      });
+    } catch {
+      finish(null);
+    }
   } else {
     renderTargets(list, a);
   }

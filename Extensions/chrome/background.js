@@ -44,7 +44,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "browspick:getTargets") {
     nativeSend({ type: "getTargets" })
       .then((r) => sendResponse(Array.isArray(r?.targets) ? r.targets : null))
-      .catch(() => sendResponse(null));
+      .catch((e) => {
+        console.warn("browspick: native messaging failed —", e?.message || e);
+        sendResponse(null);
+      });
     return true; // async sendResponse
   }
 });
@@ -122,7 +125,9 @@ async function route(url, tabId, targetKey) {
   try {
     const r = await nativeSend({ type: "send", url, targetKey });
     if (r?.ok) return;
-  } catch { /* host unavailable — fall through to the scheme */ }
+  } catch (e) {
+    console.warn("browspick: native send failed —", e?.message || e);
+  }
   sendViaScheme(url, tabId, targetKey);
 }
 
