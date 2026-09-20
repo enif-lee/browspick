@@ -8,7 +8,7 @@ KEYCHAIN := $(HOME)/Library/Keychains/browspick-signing.keychain-db
 IDENTITY := Browspick Local Signing
 KEYCHAIN_PASSWORD := $(BROWSPICK_KC_PASS)
 
-.PHONY: build bundle install run test icon clean
+.PHONY: build bundle install run dmg extension test icon clean
 
 build:
 	swift build -c release
@@ -43,6 +43,12 @@ dmg: bundle
 	hdiutil create -volname $(APP) -srcfolder .build/dmg-staging \
 		-ov -format UDZO .build/$(APP)-$(VERSION).dmg
 	@echo "Built .build/$(APP)-$(VERSION).dmg"
+
+extension:
+	rm -f .build/$(APP)-chrome-$(VERSION).zip
+	cd Extensions/chrome && zip -qr ../../.build/$(APP)-chrome-$(VERSION).zip .
+	@echo "Built .build/$(APP)-chrome-$(VERSION).zip"
+	@echo "Dev install: chrome://extensions → Developer mode → Load unpacked → Extensions/chrome"
 
 test:
 	swift run CoreChecks

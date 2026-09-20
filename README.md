@@ -62,6 +62,25 @@ Browser targets are launched by spawning the browser's own executable with the
 right flags — `NSWorkspace.openApplication` silently drops arguments on an
 already-running app, which would lose both the URL and the profile.
 
+## Browser extension (Chrome/Chromium)
+
+Links clicked *inside* a browser never reach Launch Services, so intercepting
+them needs an extension. `Extensions/chrome` is an MV3 extension that forwards
+links through the `browspick:` scheme:
+
+- **Context menu** — "Open link/page with Browspick"
+- **Toolbar button** / `Alt+Shift+B` — send the current page
+- **Alt + Click** — intercept a link click (toggleable)
+- **Auto-route domains** — normal clicks on listed hosts go straight to
+  Browspick (options page)
+
+Install for development: `chrome://extensions` → Developer mode →
+**Load unpacked** → select `Extensions/chrome`. `make extension` builds a zip
+for Web Store upload.
+
+Chrome shows an "Open Browspick.app?" dialog on the first handoff — tick
+**always allow** and it becomes silent.
+
 ## `browspick:` URL scheme
 
 ```
@@ -86,6 +105,7 @@ Browspick started as research into how existing link routers work. Roughly:
 | Private/incognito target | ✅ | ✅ | — | — | — | ✅ |
 | Native-app deep-link rewrites | — | ✅ | — | — | — | ✅ (presets) |
 | Tracking-param stripping | — | ✅ | — | — | — | ✅ |
+| In-browser interception (extension) | ✅ | ✅ | — | — | — | ✅ (Chromium) |
 | Browsing-history suggestions | — | — | — | — | — | ✅ |
 | History-based preselection | — | — | — | — | — | ✅ |
 | Open source | — | — | ✅ | ✅ | ✅ | ✅ |

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browspick Options</title>
+  <style>
+    body { font: 13px/1.5 -apple-system, system-ui, sans-serif; max-width: 520px; margin: 24px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 17px; }
+    label { display: block; margin: 14px 0 4px; }
+    .check { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+    textarea { width: 100%; box-sizing: border-box; font: 12px/1.5 ui-monospace, monospace; padding: 8px; border: 1px solid #bbb; border-radius: 6px; }
+    .hint { color: #777; font-size: 12px; margin: 4px 0 0; }
+    #status { color: #0a7f3f; font-size: 12px; margin-left: 10px; opacity: 0; transition: opacity .2s; }
+    #status.show { opacity: 1; }
+    button { margin-top: 16px; padding: 6px 14px; border: 1px solid #bbb; border-radius: 6px; background: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Browspick</h1>
+
+  <label class="check">
+    <input type="checkbox" id="altClick">
+    <span><b>Alt + Click</b> sends a link to Browspick</span>
+  </label>
+
+  <label class="check">
+    <input type="checkbox" id="alwaysPicker">
+    <span>Always show the Browspick <b>picker</b> (skip rules)</span>
+  </label>
+
+  <label for="autoDomains"><b>Auto-route domains</b></label>
+  <textarea id="autoDomains" rows="5" placeholder="docs.internal.example.com&#10;linear.app"></textarea>
+  <p class="hint">One domain per line — normal clicks on links to these hosts go straight to Browspick. Subdomains are included.</p>
+
+  <button id="save">Save</button><span id="status">Saved</span>
+
+  <script src="options.js"></script>
+</body>
+</html>
