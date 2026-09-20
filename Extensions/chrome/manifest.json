@@ -3,7 +3,7 @@
   "name": "Browspick",
   "version": "0.0.1",
   "description": "Send links to Browspick — route them to the right browser, profile, or native app.",
-  "permissions": ["contextMenus", "storage"],
+  "permissions": ["contextMenus", "storage", "webNavigation"],
   "background": { "service_worker": "background.js" },
   "action": {
     "default_title": "Send to Browspick",

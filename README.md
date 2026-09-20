@@ -71,8 +71,10 @@ links through the `browspick:` scheme:
 - **Context menu** — "Open link/page with Browspick"
 - **Toolbar button** / `Alt+Shift+B` — send the current page
 - **Alt + Click** — intercept a link click (toggleable)
-- **Auto-route domains** — normal clicks on listed hosts go straight to
-  Browspick (options page)
+- **Auto-route domains** — listed hosts always go through Browspick: in-page
+  clicks, new-tab opens (`⌘+click`, `target=_blank`), address-bar entries and
+  bookmarks. A dedup cache breaks the loop if a rule sends the URL back to the
+  same profile (options page)
 
 Install for development: `chrome://extensions` → Developer mode →
 **Load unpacked** → select `Extensions/chrome`. `make extension` builds a zip
