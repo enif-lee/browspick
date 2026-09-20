@@ -34,6 +34,16 @@ install: bundle
 run: bundle
 	open $(APP_DIR)
 
+VERSION ?= 0.0.1
+dmg: bundle
+	rm -rf .build/dmg-staging .build/$(APP)-$(VERSION).dmg
+	mkdir -p .build/dmg-staging
+	cp -R $(APP_DIR) .build/dmg-staging/
+	ln -s /Applications .build/dmg-staging/Applications
+	hdiutil create -volname $(APP) -srcfolder .build/dmg-staging \
+		-ov -format UDZO .build/$(APP)-$(VERSION).dmg
+	@echo "Built .build/$(APP)-$(VERSION).dmg"
+
 test:
 	swift run CoreChecks
 
