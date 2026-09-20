@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         LoginItem.apply()
+        NativeMessagingHost.installManifests()
         showOnboardingIfNeeded()
     }
 

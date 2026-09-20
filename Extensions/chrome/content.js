@@ -1,6 +1,7 @@
 // Browspick extension — link interception + hover popover.
 // Alt+Click or auto-route domains forward links to Browspick; hovering a link
-// briefly shows an "Open with Browspick" popover under it.
+// briefly shows a target list (browsers + profiles, fetched from the app via
+// native messaging) plus a Copy button.
 
 let opts = { altClick: true, autoDomains: [], hoverPopover: true };
 chrome.storage.sync.get(opts, (v) => { opts = v; });
@@ -38,7 +39,8 @@ let popHost = null;
 let hoverTimer = null;
 let hideTimer = null;
 let pendingLink = null;
-let currentLink = null;
+// undefined = not fetched yet, null = native host unavailable, array = targets
+let targetsCache;
 
 document.addEventListener("mouseover", (e) => {
   if (!opts.hoverPopover) return;
@@ -77,17 +79,31 @@ function scheduleHide() {
 function showPopover(a) {
   pendingLink = null;
   ensurePopover();
-  currentLink = a;
   const shadow = popHost.shadowRoot;
-  shadow.getElementById("bp-open").onclick = () => {
-    chrome.runtime.sendMessage({ type: "browspick:send", url: a.href });
-    hidePopover();
-  };
   popHost.onmouseover = () => clearTimeout(hideTimer);
   popHost.onmouseout = scheduleHide;
 
+  // Targets (browsers + profiles) — fetched once per page load.
+  const list = shadow.getElementById("bp-list");
+  if (targetsCache === undefined) {
+    list.innerHTML = `<div class="row dim">Browspick…</div>`;
+    chrome.runtime.sendMessage({ type: "browspick:getTargets" }, (r) => {
+      targetsCache = (chrome.runtime.lastError || !Array.isArray(r)) ? null : r;
+      renderTargets(list, a);
+    });
+  } else {
+    renderTargets(list, a);
+  }
+
+  shadow.getElementById("bp-copy").onclick = () => {
+    copyText(a.href);
+    const btn = shadow.getElementById("bp-copy");
+    btn.textContent = "Copied";
+    setTimeout(hidePopover, 500);
+  };
+
   const rect = a.getBoundingClientRect();
-  popHost.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 190)) + "px";
+  popHost.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 230)) + "px";
   popHost.style.top = "0px";
   popHost.style.display = "block";
   const h = popHost.offsetHeight;
@@ -95,37 +111,104 @@ function showPopover(a) {
   popHost.style.top = (below ? rect.bottom + 6 : rect.top - h - 6) + "px";
 }
 
+function renderTargets(list, a) {
+  const targets = targetsCache;
+  if (!targets || !targets.length) {
+    // Native host unavailable — fall back to a single generic entry.
+    list.innerHTML = `<button class="row">Open with Browspick</button>`;
+    list.querySelector("button").onclick = () => {
+      chrome.runtime.sendMessage({ type: "browspick:send", url: a.href });
+      hidePopover();
+    };
+    return;
+  }
+  list.innerHTML = "";
+  for (const t of targets) {
+    const btn = document.createElement("button");
+    btn.className = "row";
+    if (t.icon) {
+      const img = document.createElement("img");
+      img.src = t.icon;
+      btn.appendChild(img);
+    }
+    const label = document.createElement("span");
+    label.textContent = t.title;
+    btn.appendChild(label);
+    btn.onclick = () => {
+      chrome.runtime.sendMessage({ type: "browspick:send", url: a.href, targetKey: t.key });
+      hidePopover();
+    };
+    list.appendChild(btn);
+  }
+}
+
+function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => copyTextFallback(text));
+  } else {
+    copyTextFallback(text);
+  }
+}
+
+function copyTextFallback(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;opacity:0";
+  document.documentElement.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch {}
+  ta.remove();
+}
+
 function hidePopover() {
   clearTimeout(hideTimer);
-  currentLink = null;
   if (popHost) popHost.style.display = "none";
 }
 
 function ensurePopover() {
   if (popHost) return;
   popHost = document.createElement("div");
-  popHost.style.cssText =
-    "position:fixed;z-index:2147483647;display:none";
+  popHost.style.cssText = "position:fixed;z-index:2147483647;display:none";
   const shadow = popHost.attachShadow({ mode: "open" });
   shadow.innerHTML = `
     <style>
-      button {
+      .card {
         all: initial;
-        display: flex; align-items: center; gap: 6px;
-        padding: 6px 12px;
+        display: flex; flex-direction: column;
+        width: 210px; max-height: 280px;
         background: #1e1f24; color: #fff;
-        font: 12px/1 -apple-system, system-ui, sans-serif;
-        border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,.35);
-        cursor: pointer; user-select: none;
+        font: 12px/1.4 -apple-system, system-ui, sans-serif;
+        border-radius: 10px; overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0,0,0,.4);
       }
-      button:hover { background: #2e3038; }
-      img { width: 14px; height: 14px; }
+      #bp-list { overflow-y: auto; padding: 4px; }
+      .row {
+        all: initial;
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; box-sizing: border-box;
+        padding: 6px 10px; border-radius: 6px;
+        cursor: pointer; user-select: none;
+        color: #fff; font: inherit;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      button.row:hover { background: #34363f; }
+      .row img { width: 16px; height: 16px; flex: none; border-radius: 50%; }
+      .row span { overflow: hidden; text-overflow: ellipsis; }
+      .dim { color: #8a8d98; cursor: default; }
+      .divider { height: 1px; background: #34363f; margin: 0 4px; }
+      #bp-copy {
+        all: initial;
+        display: block; padding: 7px 10px;
+        color: #9ec1ff; font: 11px/1 -apple-system, system-ui, sans-serif;
+        cursor: pointer; text-align: center;
+      }
+      #bp-copy:hover { background: #34363f; }
     </style>
-    <button id="bp-open">
-      <img src="${chrome.runtime.getURL("icons/icon32.png")}" alt="">
-      Open with Browspick
-    </button>`;
+    <div class="card">
+      <div id="bp-list"></div>
+      <div class="divider"></div>
+      <button id="bp-copy">Copy link</button>
+    </div>`;
   document.documentElement.appendChild(popHost);
 }
 

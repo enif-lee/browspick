@@ -1,10 +1,12 @@
 // Browspick extension — service worker.
-// All forwarding goes through sendToBrowspick(): the current tab navigates to a
-// browspick: URL, macOS hands it to the app, and the page stays put. Chrome shows
-// an "Open Browspick.app?" prompt once; ticking "always allow" makes it silent.
+// Native messaging (com.ed.browspick) is the primary channel: silent and
+// bidirectional. If the host isn't installed (older app), we fall back to
+// navigating the tab to a browspick: URL, which shows Chrome's external
+// protocol prompt once per "always allow".
 
 const MENU_LINK = "browspick-link";
 const MENU_PAGE = "browspick-page";
+const NATIVE_HOST = "com.ed.browspick";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -21,22 +23,29 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const url = info.menuItemId === MENU_LINK ? info.linkUrl : info.pageUrl;
-  if (url && tab?.id != null) sendToBrowspick(url, tab.id);
+  if (url && tab?.id != null) route(url, tab.id);
 });
 
 chrome.action.onClicked.addListener((tab) => {
-  if (tab?.url && tab.id != null) sendToBrowspick(tab.url, tab.id);
+  if (tab?.url && tab.id != null) route(tab.url, tab.id);
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "send-page" && tab?.url && tab.id != null) {
-    sendToBrowspick(tab.url, tab.id);
+    route(tab.url, tab.id);
   }
 });
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "browspick:send" && typeof msg.url === "string" && sender.tab?.id != null) {
-    sendToBrowspick(msg.url, sender.tab.id);
+    route(msg.url, sender.tab.id, msg.targetKey);
+    return;
+  }
+  if (msg?.type === "browspick:getTargets") {
+    nativeSend({ type: "getTargets" })
+      .then((r) => sendResponse(Array.isArray(r?.targets) ? r.targets : null))
+      .catch(() => sendResponse(null));
+    return true; // async sendResponse
   }
 });
 
@@ -70,10 +79,10 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (d) => {
   const sourceTabId = linkOpenedTabs.get(d.tabId);
   linkOpenedTabs.delete(d.tabId);
   if (sourceTabId != null) {
-    sendToBrowspick(d.url, sourceTabId);
+    route(d.url, sourceTabId);
     chrome.tabs.remove(d.tabId).catch(() => {});
   } else {
-    sendToBrowspick(d.url, d.tabId);
+    route(d.url, d.tabId);
   }
 });
 
@@ -92,10 +101,38 @@ function wasRouted(url) {
   return ts != null && Date.now() - ts < ROUTED_TTL;
 }
 
-async function sendToBrowspick(url, tabId) {
+// MARK: - Native channel + scheme fallback
+
+function nativeSend(message) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.runtime.sendNativeMessage(NATIVE_HOST, message, (resp) => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve(resp);
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function route(url, tabId, targetKey) {
   if (!/^https?:/i.test(url)) return;
   routed.set(url, Date.now());
-  const { alwaysPicker } = await chrome.storage.sync.get({ alwaysPicker: false });
-  const target = "browspick:open?url=" + encodeURIComponent(url) + (alwaysPicker ? "&prompt" : "");
+  try {
+    const r = await nativeSend({ type: "send", url, targetKey });
+    if (r?.ok) return;
+  } catch { /* host unavailable — fall through to the scheme */ }
+  sendViaScheme(url, tabId, targetKey);
+}
+
+async function sendViaScheme(url, tabId, targetKey) {
+  let target = "browspick:open?url=" + encodeURIComponent(url);
+  if (targetKey) {
+    target += "&target=" + encodeURIComponent(targetKey);
+  } else {
+    const { alwaysPicker } = await chrome.storage.sync.get({ alwaysPicker: false });
+    if (alwaysPicker) target += "&prompt";
+  }
   chrome.tabs.update(tabId, { url: target });
 }

@@ -65,11 +65,13 @@ already-running app, which would lose both the URL and the profile.
 ## Browser extension (Chrome/Chromium)
 
 Links clicked *inside* a browser never reach Launch Services, so intercepting
-them needs an extension. `Extensions/chrome` is an MV3 extension that forwards
-links through the `browspick:` scheme:
+them needs an extension. `Extensions/chrome` is an MV3 extension that talks to
+the app over **native messaging** (`com.ed.browspick` — the manifest is
+auto-installed into each installed Chromium browser's `NativeMessagingHosts`
+dir), with the `browspick:` URL scheme as a fallback:
 
-- **Hover popover** — hovering a link shows an "Open with Browspick" button
-  (toggleable)
+- **Hover popover** — hovering a link shows the same target list as the app
+  picker (browsers + profiles, with icons), plus a Copy button (toggleable)
 - **Context menu** — "Open link/page with Browspick"
 - **Toolbar button** / `Alt+Shift+B` — send the current page
 - **Alt + Click** — intercept a link click (toggleable)
@@ -80,10 +82,12 @@ links through the `browspick:` scheme:
 
 Install for development: `chrome://extensions` → Developer mode →
 **Load unpacked** → select `Extensions/chrome`. `make extension` builds a zip
-for Web Store upload.
+for Web Store upload. The manifest pins a `key` so the extension ID
+(`ccmjimgcgbbgoaelfochaljfjnadjdij`) is stable across machines.
 
-Chrome shows an "Open Browspick.app?" dialog on the first handoff — tick
-**always allow** and it becomes silent.
+With native messaging there is no confirmation dialog. The scheme fallback
+(older app / host missing) shows Chrome's "Open Browspick.app?" prompt — tick
+**always allow** once.
 
 ## `browspick:` URL scheme
 
@@ -92,6 +96,8 @@ browspick:open?url=<encoded>                       → route normally
 browspick:open?url=<encoded>&prompt                → force the picker
 browspick:open?url=<encoded>&app=<bundleId>        → force a browser/app
 browspick:open?url=<encoded>&app=<bundleId>&profile=<dir>&private&newwindow
+browspick:open?url=<encoded>&target=<targetKey>    → force an exact target
+                                                     (extension popover picks)
 browspick:dump                                     → write a profile-store debug dump
 ```
 

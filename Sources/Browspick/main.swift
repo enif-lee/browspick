@@ -10,6 +10,12 @@ if CommandLine.arguments.contains("--dump-profiles") {
     exit(0)
 }
 
+// Chromium spawns this binary as a native messaging host
+// (`<binary> chrome-extension://<id>/`) — run the stdio loop instead of the app.
+if NativeMessagingHost.requested {
+    NativeMessagingHost.run()
+}
+
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate

@@ -33,7 +33,8 @@ final class Router {
         }
         guard let request = SchemeAPI.parse(url) else { return }
         if let target = request.target {
-            launch(url: request.url, target: target, via: .rule, source: source)
+            launch(url: request.url, target: target,
+                   via: request.manualPick ? .manual : .rule, source: source)
         } else if request.forcePrompt {
             showPicker(url: request.url, source: source)
         } else {
