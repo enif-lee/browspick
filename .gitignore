@@ -1,0 +1,4 @@
+.build/
+Browspick.app/
+*.dSYM/
+.DS_Store
