@@ -1,9 +1,9 @@
-const fields = ["altClick", "alwaysPicker", "autoDomains"];
 const $ = (id) => document.getElementById(id);
 
 chrome.storage.sync.get(
-  { altClick: true, alwaysPicker: false, autoDomains: [] },
+  { hoverPopover: true, altClick: true, alwaysPicker: false, autoDomains: [] },
   (opts) => {
+    $("hoverPopover").checked = opts.hoverPopover;
     $("altClick").checked = opts.altClick;
     $("alwaysPicker").checked = opts.alwaysPicker;
     $("autoDomains").value = (opts.autoDomains || []).join("\n");
@@ -17,6 +17,7 @@ $("save").addEventListener("click", () => {
     .filter((s) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(s));
   chrome.storage.sync.set(
     {
+      hoverPopover: $("hoverPopover").checked,
       altClick: $("altClick").checked,
       alwaysPicker: $("alwaysPicker").checked,
       autoDomains: [...new Set(domains)]

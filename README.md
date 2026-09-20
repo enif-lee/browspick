@@ -68,6 +68,8 @@ Links clicked *inside* a browser never reach Launch Services, so intercepting
 them needs an extension. `Extensions/chrome` is an MV3 extension that forwards
 links through the `browspick:` scheme:
 
+- **Hover popover** — hovering a link shows an "Open with Browspick" button
+  (toggleable)
 - **Context menu** — "Open link/page with Browspick"
 - **Toolbar button** / `Alt+Shift+B` — send the current page
 - **Alt + Click** — intercept a link click (toggleable)
