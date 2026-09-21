@@ -123,14 +123,29 @@ Browspick started as research into how existing link routers work. Roughly:
 
 (Comparison is approximate — check each project's current docs for details.)
 
-## Requirements & build
+## Install
 
-- macOS 14+, Xcode/Swift toolchain
-- `make install` — build, self-sign (stable identity so TCC grants survive
-  rebuilds), install to `/Applications`
-- `make dmg` — produce `.build/Browspick-<version>.dmg`
-- `make test` — `CoreChecks` unit checks (92 checks)
+```sh
+curl -fsSL https://raw.githubusercontent.com/enif-lee/browspick/main/Scripts/install.sh | bash
+```
+
+The script downloads the [latest release](https://github.com/enif-lee/browspick/releases/latest)
+DMG, installs `Browspick.app` to `/Applications`, clears the quarantine
+attribute (the build is self-signed, not notarized), and launches it.
+Apple Silicon only — build from source below for Intel.
+
+Or install manually: download the DMG from the release page and drag the app
+to `/Applications`.
 
 On first launch, onboarding asks to set Browspick as the default browser and
 to grant **Files and Folders** access for browser profile directories —
 without it, profiles still work but display names/history can't be read.
+
+## Requirements & build
+
+- macOS 14+, Xcode/Swift toolchain
+- `Scripts/setup-signing.sh` — one-time setup of the self-signed signing
+  identity (keeps TCC grants valid across rebuilds)
+- `make install` — build, self-sign, install to `/Applications`
+- `make dmg` — produce `.build/Browspick-<version>.dmg`
+- `make test` — `CoreChecks` unit checks (92 checks)
