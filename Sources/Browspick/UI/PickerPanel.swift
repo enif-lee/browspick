@@ -98,12 +98,7 @@ final class PickerPanel: NSPanel, NSWindowDelegate {
             break
         }
         if chars == "c" {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(urlString, forType: .string)
-            selection.copied = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-                self?.selection.copied = false
-            }
+            selection.copyURL(urlString)
             return true
         }
         if let digit = chars.first, digit.isNumber, digit != "0" {

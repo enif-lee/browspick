@@ -2,7 +2,7 @@ import AppKit
 import BrowspickCore
 import SwiftUI
 
-final class PickerSelection: ObservableObject {
+final class PickerSelection: NSObject, ObservableObject {
     @Published var entries: [PickerEntry] = []
     @Published var selectedIndex = 0
     /// Brief "URL copied" confirmation shown in the footer.
@@ -17,6 +17,21 @@ final class PickerSelection: ObservableObject {
         guard !entries.isEmpty else { return }
         selectedIndex = (selectedIndex + delta + entries.count) % entries.count
     }
+
+    private var copiedResetTimer: Timer?
+
+    func copyURL(_ url: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url, forType: .string)
+        copied = true
+        // Target-action Timer — no @Sendable capture of self.
+        copiedResetTimer?.invalidate()
+        copiedResetTimer = Timer.scheduledTimer(
+            timeInterval: 1.2, target: self,
+            selector: #selector(resetCopied), userInfo: nil, repeats: false)
+    }
+
+    @objc private func resetCopied() { copied = false }
 }
 
 struct PickerView: View {
@@ -32,21 +47,38 @@ struct PickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // ZWSP between every char → breaks anywhere, so line 1 fills fully.
-            // (SwiftUI only breaks at UAX#14 boundaries; long path segments are
-            // unbreakable tokens that would jump whole to line 2.)
-            Text(url.map { "\($0)\u{200B}" }.joined())
-                .font(.system(.callout, design: .monospaced))
-                .lineLimit(2)
-                .truncationMode(.tail)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .contextMenu {
-                    Button("Copy URL") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(url, forType: .string)
+            HStack(alignment: .top, spacing: 8) {
+                // ZWSP between every char → breaks anywhere, so line 1 fills fully.
+                // (SwiftUI only breaks at UAX#14 boundaries; long path segments are
+                // unbreakable tokens that would jump whole to line 2.)
+                Text(url.map { "\($0)\u{200B}" }.joined())
+                    .font(.system(.callout, design: .monospaced))
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contextMenu {
+                        Button("Copy URL") { selection.copyURL(url) }
                     }
+                Button {
+                    selection.copyURL(url)
+                } label: {
+                    Group {
+                        if selection.copied {
+                            Image(systemName: "checkmark")
+                        } else {
+                            Text("c")
+                        }
+                    }
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(selection.copied ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                    .frame(width: 18, height: 18)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
                 }
+                .buttonStyle(.plain)
+                .help("Copy URL (c)")
+            }
 
             ScrollViewReader { proxy in
                 ScrollView {
