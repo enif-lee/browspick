@@ -37,7 +37,7 @@ install: bundle
 run: bundle
 	open $(APP_DIR)
 
-VERSION ?= 0.0.1
+VERSION ?= 0.0.2
 dmg: bundle
 	rm -rf .build/dmg-staging .build/$(APP)-$(VERSION).dmg
 	mkdir -p .build/dmg-staging
