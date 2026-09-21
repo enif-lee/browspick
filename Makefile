@@ -27,7 +27,13 @@ bundle: build icon
 	@echo "Built $(APP_DIR)"
 
 icon:
-	@if [ ! -f Resources/AppIcon.icns ]; then swift Scripts/make-icon.swift; fi
+	rm -rf Resources/AppIcon.iconset
+	mkdir -p Resources/AppIcon.iconset
+	for s in 16 32 128 256 512; do \
+		sips -z $$s $$s Resources/icon.png --out Resources/AppIcon.iconset/icon_$${s}x$${s}.png >/dev/null; \
+		sips -z $$((s*2)) $$((s*2)) Resources/icon.png --out Resources/AppIcon.iconset/icon_$${s}x$${s}@2x.png >/dev/null; \
+	done
+	iconutil -c icns Resources/AppIcon.iconset -o Resources/AppIcon.icns
 
 install: bundle
 	rm -rf /Applications/$(APP).app
@@ -37,7 +43,7 @@ install: bundle
 run: bundle
 	open $(APP_DIR)
 
-VERSION ?= 0.0.2
+VERSION ?= 0.0.3
 dmg: bundle
 	rm -rf .build/dmg-staging .build/$(APP)-$(VERSION).dmg
 	mkdir -p .build/dmg-staging

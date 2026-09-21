@@ -23,7 +23,7 @@ PASSWORD="$(uuidgen | tr -d '-' | tr 'A-F' 'a-f')"
 security create-keychain -p "$PASSWORD" "$KEYCHAIN"
 security set-keychain-settings "$KEYCHAIN"
 security unlock-keychain -p "$PASSWORD" "$KEYCHAIN"
-security add-generic-password -s "$SERVICE" -a browspick -w "$PASSWORD" -T /usr/bin/security
+security add-generic-password -U -s "$SERVICE" -a browspick -w "$PASSWORD" -T /usr/bin/security
 
 # Self-signed code-signing certificate (10 y). -k targets the new keychain.
 security create-certificate-identity \
@@ -45,7 +45,9 @@ CONF
     openssl req -x509 -newkey rsa:2048 -keyout "$TDIR/key.pem" \
       -out "$TDIR/cert.pem" -days 3650 -nodes -config "$TDIR/cert.conf" \
       -subj "/CN=$IDENTITY"
-    openssl pkcs12 -export -inkey "$TDIR/key.pem" -in "$TDIR/cert.pem" \
+    # -legacy: macOS `security import` only accepts 3DES/RC2 PKCS12, not the
+    # AES/PBES2 defaults used by OpenSSL 3.x.
+    openssl pkcs12 -export -legacy -inkey "$TDIR/key.pem" -in "$TDIR/cert.pem" \
       -out "$TDIR/id.p12" -passout pass:"$PASSWORD" -name "$IDENTITY"
     security import "$TDIR/id.p12" -k "$KEYCHAIN" -P "$PASSWORD" \
       -T /usr/bin/codesign -T /usr/bin/security
