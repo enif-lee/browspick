@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Resources/icon.png" width="160" alt="Browspick">
+</p>
+
 # Browspick
 
 A native macOS link router. Browspick registers itself as the default browser,
