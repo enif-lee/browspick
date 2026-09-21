@@ -6,7 +6,10 @@ APP_DIR := $(APP).app
 # cdhash every build, which silently invalidates Files & Folders permissions.
 KEYCHAIN := $(HOME)/Library/Keychains/browspick-signing.keychain-db
 IDENTITY := Browspick Local Signing
-KEYCHAIN_PASSWORD := $(BROWSPICK_KC_PASS)
+# Signing keychain unlock password — resolved from the login keychain item
+# "browspick-signing" (created by Scripts/setup-signing.sh), or set
+# BROWSPICK_KEYCHAIN_PASSWORD in the environment to override.
+KEYCHAIN_PASSWORD ?= $(shell security find-generic-password -s browspick-signing -w 2>/dev/null || echo "$(BROWSPICK_KEYCHAIN_PASSWORD)")
 
 .PHONY: build bundle install run dmg extension test icon clean
 
