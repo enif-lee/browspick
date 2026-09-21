@@ -112,6 +112,11 @@ final class PickerPanel: NSPanel, NSWindowDelegate {
         return false
     }
 
+    /// Losing key status (click elsewhere, switch apps) dismisses the picker.
+    func windowDidResignKey(_ notification: Notification) {
+        close()
+    }
+
     func windowWillClose(_ notification: Notification) {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
