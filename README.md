@@ -8,6 +8,18 @@ window**, or **native app** (Slack, Zoom, Notion…).
 Pure Swift — SwiftUI + AppKit, no web views, no background daemons beyond the
 app itself.
 
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/enif-lee/browspick/main/Scripts/install.sh | bash
+```
+
+Downloads the [latest release](https://github.com/enif-lee/browspick/releases/latest)
+DMG, installs `Browspick.app` to `/Applications`, clears the quarantine
+attribute (self-signed build), and launches it. Apple Silicon only —
+[build from source](#requirements--build) for Intel, or grab the DMG from the
+release page manually.
+
 ## Why
 
 Browsers are workspaces now. Work docs live in the work profile, personal stuff
@@ -123,24 +135,6 @@ Browspick started as research into how existing link routers work. Roughly:
 
 (Comparison is approximate — check each project's current docs for details.)
 
-## Install
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/enif-lee/browspick/main/Scripts/install.sh | bash
-```
-
-The script downloads the [latest release](https://github.com/enif-lee/browspick/releases/latest)
-DMG, installs `Browspick.app` to `/Applications`, clears the quarantine
-attribute (the build is self-signed, not notarized), and launches it.
-Apple Silicon only — build from source below for Intel.
-
-Or install manually: download the DMG from the release page and drag the app
-to `/Applications`.
-
-On first launch, onboarding asks to set Browspick as the default browser and
-to grant **Files and Folders** access for browser profile directories —
-without it, profiles still work but display names/history can't be read.
-
 ## Requirements & build
 
 - macOS 14+, Xcode/Swift toolchain
@@ -149,3 +143,7 @@ without it, profiles still work but display names/history can't be read.
 - `make install` — build, self-sign, install to `/Applications`
 - `make dmg` — produce `.build/Browspick-<version>.dmg`
 - `make test` — `CoreChecks` unit checks (92 checks)
+
+On first launch, onboarding asks to set Browspick as the default browser and
+to grant **Files and Folders** access for browser profile directories —
+without it, profiles still work but display names/history can't be read.
